@@ -2,13 +2,9 @@
 
 [Route("api/[controller]")] // this will map to /api/polls
 [ApiController]
-public class PollsController : ControllerBase
+public class PollsController(IPollService pollService) : ControllerBase
 {
-    private readonly IPollService _pollService;
-    public PollsController(IPollService pollService)
-    {
-        _pollService = pollService;
-    }
+    private readonly IPollService _pollService = pollService;
 
     [HttpGet]
     [Route("")]
@@ -23,7 +19,7 @@ public class PollsController : ControllerBase
     }
 
     [HttpGet]
-    [Route("{id:int}")]
+    [Route("{id}")]
     public IActionResult Get(int id)
     {
         if (id <= 0)
@@ -53,7 +49,7 @@ public class PollsController : ControllerBase
     }
 
     [HttpPut]
-    [Route("{id:int}")]
+    [Route("{id}")]
     public IActionResult Update(int id, [FromBody] Poll request)
     {
         var result = _pollService.Update(id, request);
@@ -66,7 +62,7 @@ public class PollsController : ControllerBase
     }
 
     [HttpDelete]
-    [Route("{id:int}")]
+    [Route("{id}")]
     public IActionResult Delete(int id)
     {
         var result = _pollService.Delete(id);
