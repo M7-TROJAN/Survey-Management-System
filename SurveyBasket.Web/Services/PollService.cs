@@ -1,7 +1,4 @@
-﻿
-using SurveyBasket.Web.Models;
-
-namespace SurveyBasket.Web.Services;
+﻿namespace SurveyBasket.Web.Services;
 
 public class PollService : IPollService
 {

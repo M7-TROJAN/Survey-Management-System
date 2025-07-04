@@ -1,4 +1,6 @@
-﻿namespace SurveyBasket.Web.Controllers;
+﻿using SurveyBasket.Web.Mapping;
+
+namespace SurveyBasket.Web.Controllers;
 
 [Route("api/[controller]")] // this will map to /api/polls
 [ApiController]
@@ -11,25 +13,22 @@ public class PollsController(IPollService pollService) : ControllerBase
     public IActionResult GetAll()
     {
         var polls = _pollService.GetAll();
-        if (polls is null || !polls.Any())
-        {
-            return NotFound("No polls found.");
-        }
-        return Ok(polls);
+        var pollResponses = polls.MapToResponse();
+        return Ok(pollResponses);
     }
 
     [HttpGet]
     [Route("{id}")]
-    public IActionResult Get(int id)
+    public IActionResult Get([FromRoute] int id)
     {
-        if (id <= 0)
-        {
-            return BadRequest("Invalid poll ID.");
-        }
-
         var poll = _pollService.Get(id);
 
-        return poll is null ? NotFound() : Ok(poll);
+        if (poll is null)
+            return NotFound("Poll not found.");
+
+        var pollResponse = poll.MapToResponse();
+
+        return Ok(pollResponse);
     }
 
     [HttpPost]
@@ -50,7 +49,7 @@ public class PollsController(IPollService pollService) : ControllerBase
 
     [HttpPut]
     [Route("{id}")]
-    public IActionResult Update(int id, [FromBody] Poll request)
+    public IActionResult Update([FromRoute] int id, [FromBody] Poll request)
     {
         var result = _pollService.Update(id, request);
 
@@ -63,7 +62,7 @@ public class PollsController(IPollService pollService) : ControllerBase
 
     [HttpDelete]
     [Route("{id}")]
-    public IActionResult Delete(int id)
+    public IActionResult Delete([FromRoute] int id)
     {
         var result = _pollService.Delete(id);
 
