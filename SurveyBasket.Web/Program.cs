@@ -1,4 +1,8 @@
+using MapsterMapper;
 using Scalar.AspNetCore;
+using SurveyBasket.Web.InfraStructure.DependancyInjection;
+using SurveyBasket.Web.Mapping;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +11,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+// Register Mapster for mapping
+builder.Services.AddMapster();
 
 builder.Services.AddScoped<IPollService, PollService>();
 

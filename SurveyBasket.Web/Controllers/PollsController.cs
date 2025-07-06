@@ -1,6 +1,4 @@
-﻿using SurveyBasket.Web.Mapping;
-
-namespace SurveyBasket.Web.Controllers;
+﻿namespace SurveyBasket.Web.Controllers;
 
 [Route("api/[controller]")] // this will map to /api/polls
 [ApiController]
@@ -13,8 +11,10 @@ public class PollsController(IPollService pollService) : ControllerBase
     public IActionResult GetAll()
     {
         var polls = _pollService.GetAll();
-        var pollResponses = polls.MapToResponse();
-        return Ok(pollResponses);
+
+        var Response = polls.Adapt<IEnumerable<PollResponse>>();
+
+        return Ok(Response);
     }
 
     [HttpGet]
@@ -26,14 +26,14 @@ public class PollsController(IPollService pollService) : ControllerBase
         if (poll is null)
             return NotFound("Poll not found.");
 
-        var pollResponse = poll.MapToResponse();
+       PollResponse Response = poll.Adapt<PollResponse>();
 
-        return Ok(pollResponse);
+        return Ok(Response);
     }
 
     [HttpPost]
     [Route("")]
-    public IActionResult Add([FromBody] Poll request)
+    public IActionResult Add([FromBody] CreatePollRequest request)
     {
         if (request is null)
         {
@@ -43,21 +43,23 @@ public class PollsController(IPollService pollService) : ControllerBase
         {
             return BadRequest("Poll title and description are required.");
         }
-        var addedPoll = _pollService.Add(request);
+
+        var poll = request.Adapt<Poll>();
+
+        var addedPoll = _pollService.Add(poll);
         return CreatedAtAction(nameof(Get), new { id = addedPoll.Id }, addedPoll);
     }
 
     [HttpPut]
     [Route("{id}")]
-    public IActionResult Update([FromRoute] int id, [FromBody] Poll request)
+    public IActionResult Update([FromRoute] int id, [FromBody] CreatePollRequest request)
     {
-        var result = _pollService.Update(id, request);
+        var isUpdated = _pollService.Update(id, request.Adapt<Poll>());
 
-        if (!result)
+        if (!isUpdated)
             return NotFound("Poll not found or update failed.");
 
         return NoContent();
-
     }
 
     [HttpDelete]
