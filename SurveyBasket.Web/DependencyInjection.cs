@@ -1,14 +1,17 @@
 ﻿using MapsterMapper;
 using SharpGrip.FluentValidation.AutoValidation.Mvc.Extensions;
+using SurveyBasket.Web.Persistence;
 using System.Reflection;
 
 namespace SurveyBasket.Web;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddDependecies(this IServiceCollection services)
+    public static IServiceCollection AddDependecies(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddControllers();
+
+        services.AddDatabase(configuration); // Register the database context
 
         services.AddOpenApi();
 
@@ -37,6 +40,31 @@ public static class DependencyInjection
         // Add FluentValidation configuration
         services.AddFluentValidationAutoValidation()
             .AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+
+        return services;
+    }
+
+    public static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration)
+    {
+        // Retrieve the database connection string from configuration
+        var connectionString = configuration.GetConnectionString("DefaultConnection")
+            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
+        // Register the application's DbContext with SQL Server support
+        services.AddDbContext<ApplicationDbContext>(options =>
+            options.UseSqlServer(connectionString, sqlOptions =>
+            {
+                // Specify the assembly containing the migrations
+                sqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+                // Set command timeout to 60 seconds
+                sqlOptions.CommandTimeout(60);
+                // Enable retry on failure (3 retries, wait 5 seconds between retries)
+                sqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 3,
+                    maxRetryDelay: TimeSpan.FromSeconds(5),
+                    errorNumbersToAdd: null
+                );
+            }));
 
         return services;
     }

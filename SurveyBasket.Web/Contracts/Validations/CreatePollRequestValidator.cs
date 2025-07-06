@@ -1,6 +1,6 @@
 ﻿namespace SurveyBasket.Web.Contracts.Validations;
 
-public class CreatePollRequestValidator : AbstractValidator<CreatePollRequest>
+public class CreatePollRequestValidator : AbstractValidator<PollRequest>
 {
     public CreatePollRequestValidator()
     {
@@ -9,7 +9,7 @@ public class CreatePollRequestValidator : AbstractValidator<CreatePollRequest>
             .WithMessage("Title is required.")
             .Length(3, 100);
 
-        RuleFor(x => x.Description)
+        RuleFor(x => x.Summary)
             .NotEmpty()
             .Length(3, 1000);
     }

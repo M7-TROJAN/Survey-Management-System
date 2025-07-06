@@ -1,68 +1,75 @@
-﻿namespace SurveyBasket.Web.Services;
+﻿using SurveyBasket.Web.Persistence;
 
-public class PollService : IPollService
+namespace SurveyBasket.Web.Services;
+
+public class PollService(ApplicationDbContext context) : IPollService
 {
-    public IEnumerable<Poll> GetAll() =>
-    _polls;
+    private readonly ApplicationDbContext _context = context;
 
-    public Poll? Get(int id) =>
-        _polls.FirstOrDefault(p => p.Id == id);
-
-    public Poll Add(Poll pool)
+    public async Task<IEnumerable<Poll>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        pool.Id = _polls.Count + 1; // Simulate auto-increment ID
-        _polls.Add(pool);
-        return pool;
+        return await _context.Polls
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
     }
 
-    public bool Update(int id, Poll pool)
+
+    public async Task<Poll?> GetAsync(int id, CancellationToken cancellationToken = default)
     {
-        var currentPoll = Get(id);
+
+        return await _context.Polls.FindAsync(id, cancellationToken);
+    }
+
+    public async Task<Poll> AddAsync(Poll poll, CancellationToken cancellationToken = default)
+    {
+        await _context.AddAsync(poll, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return poll;
+    }
+
+    public async Task<bool> UpdateAsync(int id, Poll poll, CancellationToken cancellationToken = default)
+    {
+        var currentPoll = await GetAsync(id, cancellationToken);
 
         if (currentPoll is null)
             return false;
 
-        currentPoll.Title = pool.Title;
-        currentPoll.Description = pool.Description;
+        currentPoll.Title = poll.Title;
+        currentPoll.Summary = poll.Summary;
+        currentPoll.StartsAt = poll.StartsAt;
+        currentPoll.EndsAt = poll.EndsAt;
+
+        await _context.SaveChangesAsync(cancellationToken);
 
         return true;
     }
 
-    public bool Delete(int id)
+    public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
-        var pool = Get(id);
+        var poll = await GetAsync(id, cancellationToken);
 
-        if (pool is null)
+        if (poll is null)
             return false;
 
-        _polls.Remove(pool);
+        _context.Remove(poll);
+
+        await _context.SaveChangesAsync(cancellationToken);
 
         return true;
     }
 
+    public async Task<bool> TogglePublishStatusAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var poll = await GetAsync(id, cancellationToken);
 
-    // This method simulates a database or external service call to retrieve polls.
-    private static readonly List<Poll> _polls =
-    [
-            new Poll { Id = 1, Title = "Favorite Color", Description = "What is your favorite color?" },
-            new Poll { Id = 2, Title = "Best Programming Language", Description = "Which programming language do you prefer?" },
-            new Poll { Id = 3, Title = "Best Framework", Description = "Which framework do you prefer?" },
-            new Poll { Id = 4, Title = "Best Database", Description = "Which database do you prefer?" },
-            new Poll { Id = 5, Title = "Best Cloud Provider", Description = "Which cloud provider do you prefer?" },
-            new Poll { Id = 6, Title = "Best IDE", Description = "Which IDE do you prefer?" },
-            new Poll { Id = 7, Title = "Best Operating System", Description = "Which operating system do you prefer?" },
-            new Poll { Id = 8, Title = "Best Browser", Description = "Which browser do you prefer?" },
-            new Poll { Id = 9, Title = "Best Mobile OS", Description = "Which mobile operating system do you prefer?" },
-            new Poll { Id = 10, Title = "Best Game", Description = "Which game do you prefer?" },
-            new Poll { Id = 11, Title = "Best Movie", Description = "Which movie do you prefer?" },
-            new Poll { Id = 12, Title = "Best TV Show", Description = "Which TV show do you prefer?" },
-            new Poll { Id = 13, Title = "Best Book", Description = "Which book do you prefer?" },
-            new Poll { Id = 14, Title = "Best Music Genre", Description = "Which music genre do you prefer?" },
-            new Poll { Id = 15, Title = "Best Sport", Description = "Which sport do you prefer?" },
-            new Poll { Id = 16, Title = "Best Hobby", Description = "Which hobby do you prefer?" },
-            new Poll { Id = 17, Title = "Best Food", Description = "Which food do you prefer?" },
-            new Poll { Id = 18, Title = "Best Drink", Description = "Which drink do you prefer?" },
-            new Poll { Id = 19, Title = "Best Vacation Destination", Description = "Which vacation destination do you prefer?" },
-            new Poll { Id = 20, Title = "Best Pet", Description = "Which pet do you prefer?" }
-    ];
+        if (poll is null)
+            return false;
+
+        poll.IsPublished = !poll.IsPublished;
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return true;
+    }
 }

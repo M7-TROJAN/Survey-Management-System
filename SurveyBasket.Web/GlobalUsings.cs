@@ -1,7 +1,9 @@
-﻿global using Microsoft.AspNetCore.Mvc;
+﻿global using FluentValidation;
 global using Mapster;
-global using FluentValidation;
-global using SurveyBasket.Web.Models;
-global using SurveyBasket.Web.Services;
+global using Microsoft.AspNetCore.Mvc;
+global using Microsoft.EntityFrameworkCore;
+global using Microsoft.EntityFrameworkCore.Metadata.Builders;
 global using SurveyBasket.Web.Contracts.Requests;
 global using SurveyBasket.Web.Contracts.Responces;
+global using SurveyBasket.Web.Entities;
+global using SurveyBasket.Web.Services;

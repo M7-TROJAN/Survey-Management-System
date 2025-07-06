@@ -3,7 +3,7 @@ using SurveyBasket.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDependecies();
+builder.Services.AddDependecies(builder.Configuration);
 
 var app = builder.Build();
 
