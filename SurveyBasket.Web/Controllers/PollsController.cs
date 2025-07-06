@@ -35,15 +35,6 @@ public class PollsController(IPollService pollService) : ControllerBase
     [Route("")]
     public IActionResult Add([FromBody] CreatePollRequest request)
     {
-        if (request is null)
-        {
-            return BadRequest("Poll data is required.");
-        }
-        if (string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.Description))
-        {
-            return BadRequest("Poll title and description are required.");
-        }
-
         var poll = request.Adapt<Poll>();
 
         var addedPoll = _pollService.Add(poll);
