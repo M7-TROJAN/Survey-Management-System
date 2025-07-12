@@ -1,4 +1,6 @@
-﻿namespace SurveyBasket.Web.Mapping;
+﻿using SurveyBasket.Web.Contracts.Polls;
+
+namespace SurveyBasket.Web.Mapping;
 
 public class MappingRegistration : IRegister
 {
