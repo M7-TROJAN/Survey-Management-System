@@ -24,7 +24,7 @@ public static class DependencyInjection
 
         services.AddMapsterConfig(); // Register Mapster configuration
                                           //
-       services.AddFluentValidationConfig(); // Register FluentValidation configuration
+        services.AddFluentValidationConfig(); // Register FluentValidation configuration
 
         services.AddScoped<IPollService, PollService>();
         services.AddScoped<IAuthService, AuthService>();
