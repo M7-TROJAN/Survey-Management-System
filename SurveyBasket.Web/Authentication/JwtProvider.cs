@@ -41,16 +41,18 @@ public class JwtProvider(IOptions<JwtOptions> options) : IJwtProvider
         return (jwt, _options.ExpiryMinutes * 60);
     }
 
-    // Validates a JWT token and returns the UserId (sub claim) if valid, otherwise null
     public string? ValidateToken(string token)
     {
         try
         {
             // Validate the token using the configured validation parameters
-            var principal = _tokenHandler.ValidateToken(token, GetValidationParameters(), out _);
+            _tokenHandler.ValidateToken(token, GetValidationParameters(validateLifetime: false), out SecurityToken validatedToken);
 
-            // Extract the user ID (sub claim) from the token
-            return principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+            if (validatedToken is not JwtSecurityToken jwtToken)
+                return null;
+
+            return jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value;
+
         }
         catch
         {
@@ -72,7 +74,7 @@ public class JwtProvider(IOptions<JwtOptions> options) : IJwtProvider
     }
 
     // Returns the parameters used to validate an incoming JWT
-    private TokenValidationParameters GetValidationParameters()
+    private TokenValidationParameters GetValidationParameters(bool validateLifetime = true)
     {
         return new TokenValidationParameters
         {
@@ -82,14 +84,14 @@ public class JwtProvider(IOptions<JwtOptions> options) : IJwtProvider
             ValidateIssuer = false,   // You can enable if you want to restrict the issuer
             ValidateAudience = false, // You can enable if you want to restrict the audience
 
-            ValidateLifetime = true,     // Check for token expiration
+            ValidateLifetime = validateLifetime,     // Check for token expiration
             ClockSkew = TimeSpan.Zero    // No clock skew allowed (strict expiry)
         };
     }
 }
 
 
-/* 
+/*
 // old code
 
 using Microsoft.IdentityModel.Tokens;
@@ -136,7 +138,7 @@ public class JwtProvider(IOptions<JwtOptions> options) : IJwtProvider
     public string? ValidateToken(string token)
     {
         // first: we need to prepare the symmetric security key (the same key used to sign the token)  
-        var symmetricSecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Key!));
+        var symmetricSecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Key));
 
         // then: we need to create a token handler to validate the token
         var tokenHandler = new JwtSecurityTokenHandler();
@@ -144,22 +146,21 @@ public class JwtProvider(IOptions<JwtOptions> options) : IJwtProvider
         try
         {
             // Validate the token using the symmetric key and validation parameters 
-            var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
+            tokenHandler.ValidateToken(token, new TokenValidationParameters
             {
                 IssuerSigningKey = symmetricSecurityKey,
                 ValidateIssuerSigningKey = true,
                 ValidateIssuer = false,
                 ValidateAudience = false,
-                ValidateLifetime = true,
                 ClockSkew = TimeSpan.Zero // Disable clock skew for immediate validation
             }, out SecurityToken validatedToken);
 
-            // If validation is successful, extract the user ID from the token claims and return it
-            return principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value; 
+            var jwtToken = (JwtSecurityToken)validatedToken;
+
+            return jwtToken.Claims.First(x => x.Type == JwtRegisteredClaimNames.Sub).Value;
         }
-        catch (Exception)
+        catch
         {
-            // Token validation failed
             return null;
         }
     }

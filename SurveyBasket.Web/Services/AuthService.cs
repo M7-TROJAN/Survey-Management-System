@@ -59,6 +59,92 @@ public class AuthService(UserManager<ApplicationUser> userManager, IJwtProvider 
         );
     }
 
+    public async Task<AuthResponse?> GetRefreshTokenAsync(string token, string refreshToken, CancellationToken cancellationToken = default)
+    {
+        // Validate the JWT token
+        var userId = _jwtProvider.ValidateToken(token);
+
+        if (userId is null)
+            return null;
+
+        // Find the user by ID
+        var user = await _userManager.FindByIdAsync(userId);
+
+        if (user is null)
+            return null;
+
+        // Check if the provided refresh token is valid
+        var userRefreshToken = user.RefreshTokens.FirstOrDefault(rt => rt.Token == refreshToken && rt.IsActive);
+
+        if (userRefreshToken is null)
+            return null;
+
+        // Generate a new JWT token
+        var (newToken, expiresIn) = _jwtProvider.GenerateToken(user);
+
+        // Generate a new refresh token
+        var newRefreshToken = GenerateRefreshToken();
+        var newRefreshTokenExpiration = DateTime.UtcNow.AddDays(_RefreshTokenExpiryDays);
+
+        // Mark the old refresh token as revoked (because the user can use it only once)
+        userRefreshToken.RevokedOn = DateTime.UtcNow;
+
+        user.RefreshTokens.Add(new RefreshToken
+        {
+            Token = newRefreshToken,
+            ExpiresOn = newRefreshTokenExpiration,
+        });
+
+        // Save changes to the user entity
+        var result = await _userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+        {
+            // Handle the error, e.g., log it or throw an exception
+            return null;
+        }
+
+        // Return the new token response
+        return new AuthResponse(
+            user.Id,
+            user.Email,
+            user.FirstName,
+            user.LastName,
+            newToken,
+            expiresIn,
+            newRefreshToken,
+            newRefreshTokenExpiration
+        );
+    }
+
+    public async Task<bool> RevokeRefreshTokenAsync(string token, string refreshToken, CancellationToken cancellationToken = default)
+    {
+        // Validate the JWT token
+        var userId = _jwtProvider.ValidateToken(token);
+
+        if (userId is null)
+            return false;
+
+        // Find the user by ID
+        var user = await _userManager.FindByIdAsync(userId);
+
+        if (user is null)
+            return false;
+
+        // Find the refresh token to revoke
+        var userRefreshToken = user.RefreshTokens.FirstOrDefault(rt => rt.Token == refreshToken && rt.IsActive);
+
+        if (userRefreshToken is null)
+            return false;
+
+        // Mark the refresh token as revoked
+        userRefreshToken.RevokedOn = DateTime.UtcNow;
+
+        // Save changes to the user entity
+        var result = await _userManager.UpdateAsync(user);
+
+        return result.Succeeded;
+    }
+
     private static string GenerateRefreshToken()
     {
         // Generate a random 64-byte array and convert it to a Base64 string
