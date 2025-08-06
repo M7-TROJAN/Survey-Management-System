@@ -5,12 +5,12 @@ namespace SurveyBasket.Web.Controllers;
 
 [Route("api/[controller]")] // this will map to /api/polls
 [ApiController]
+[Authorize] // this will require authentication for all actions in this controller
 public class PollsController(IPollService pollService) : ControllerBase
 {
     private readonly IPollService _pollService = pollService;
 
     [HttpGet("")]
-    [Authorize]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
         var polls = await _pollService.GetAllAsync(cancellationToken);
@@ -39,7 +39,9 @@ public class PollsController(IPollService pollService) : ControllerBase
     {
         var newPoll = await _pollService.AddAsync(request.Adapt<Poll>(), cancellationToken);
 
-        return CreatedAtAction(nameof(Get), new { id = newPoll.Id }, newPoll);
+        var response = newPoll.Adapt<PollResponse>();
+
+        return CreatedAtAction(nameof(Get), new { id = newPoll.Id }, response);
     }
 
     [HttpPut("{id}")]
